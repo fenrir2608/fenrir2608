@@ -1,0 +1,41 @@
+name: Update Sponsors README
+
+on:
+  workflow_dispatch:
+  schedule:
+    # Daily at 15:30 UTC
+    - cron: "30 15 * * *"
+
+permissions:
+  contents: write
+
+jobs:
+  sponsors:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Generate current sponsors
+        uses: JamesIves/github-sponsors-readme-action@v1
+        with:
+          token: ${{ secrets.PAT }}
+          file: README.md
+          marker: current-sponsors
+          active-only: true
+          include-private: true
+          fallback: '<sub>No sponsors yet — <a href="https://github.com/sponsors/fenrir2608">become the first!</a></sub>'
+          template: '<a href="{{ url }}"><img src="https://github.com/{{ login }}.png" width="50" alt="@{{ login }}" title="@{{ login }}" /></a> '
+
+      - name: Generate past sponsors
+        env:
+          PAT: ${{ secrets.PAT }}
+        run: node scripts/update-past-sponsors.mjs
+
+      - name: Commit and push
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add README.md
+          git diff --staged --quiet || git commit -m "docs: update sponsors"
+          git push
